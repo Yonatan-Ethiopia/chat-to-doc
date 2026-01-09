@@ -14,10 +14,10 @@ def getConversationMessage(conversation):
             author = node['message']['author']['role']
             if author == "assistant" or author == "tool":
                 author = "chatgpt"
-            else if authot == "system" and node['message']['metadata']['is_user_system_message']:
+            if author == "system" and node['message']['metadata']['is_user_system_message']:
                 author = "custom user info"
             
-            if node['message']['content']['content_type'] == "text" or node['message']['content']['content_type'] == "multimodal_text"):
+            if node['message']['content']['content_type'] == "text" or node['message']['content']['content_type'] == "multimodal_text":
                 parts = node['message']['content']["parts"]
                 part = []
                 for i in parts:
