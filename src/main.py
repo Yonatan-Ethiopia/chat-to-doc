@@ -1,5 +1,5 @@
 def getConversationMessage(conversation):
-    message = {}
+    message = []
     currentNode = conversation.current_node
     while currentNode != None:
         node = conversation.mapping[currentNode]
@@ -19,9 +19,13 @@ def getConversationMessage(conversation):
             
             if node['message']['content']['content_type'] == "text" or node['message']['content']['content_type'] == "multimodal_text"):
                 parts = node['message']['content']["parts"]
-                part = {}
+                part = []
                 for i in parts:
                     if type(i) and len(i)>0:
-                        part["text"] = i
+                        part.append({"text":i})
+                if len(part) > 0:
+                    message.append({"author":author, "parts": part})
+        currentNode = node["parent"]
+    return message
 
 
