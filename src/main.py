@@ -32,6 +32,6 @@ def renderConversations(fullChatHist):
     for i in range(4):
         f = getConversationMessage(fullChatHist[i])
         for j in f:
-            print(f"Author: ${j["author"]} \n Message: ${j["parts"]["text"]} \n\n")
+            print(f"Author: ${j['author']} \n Message: ${j['parts']['text']} \n\n")
 
 
