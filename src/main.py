@@ -1,8 +1,8 @@
 def getConversationMessage(conversation):
     message = []
-    currentNode = conversation.current_node
+    currentNode = conversation.["current_node"]
     while currentNode != None:
-        node = conversation.mapping[currentNode]
+        node = conversation["mapping"][currentNode]
         if (node and 
             'message' in node and 
             node['message'] and 
