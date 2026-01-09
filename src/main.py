@@ -1,8 +1,8 @@
 def getConversationMessage(conversation):
     message = []
-    currentNode = conversation.current_node
+    currentNode = conversation["current_node"]
     while currentNode != None:
-        node = conversation.mapping[currentNode]
+        node = conversation["mapping"][currentNode]
         if (node and 
             'message' in node and 
             node['message'] and 
@@ -26,12 +26,10 @@ def getConversationMessage(conversation):
                 if len(part) > 0:
                     message.append({"author":author, "parts": part})
         currentNode = node["parent"]
-    return message
+    return reversed(message)
 
 def renderConversations(fullChatHist):
-    for i in range(4):
-        f = getConversationMessage(fullChatHist[i])
-        for j in f:
-            print(f"Author: ${j['author']} \n Message: ${j['parts']['text']} \n\n")
 
-
+    f = getConversationMessage(fullChatHist)
+    for j in f:
+        print(f"Author: ${j['author']} \n Message: ${j['parts'][0]['text']} \n")
