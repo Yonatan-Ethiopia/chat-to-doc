@@ -3,8 +3,34 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib.colors import HexColor
+from groq import Groq
 import io
 
+class Document:
+    def __init__(self):
+        self.chapters = []
+class Chapter:
+    def __init__(self, title):
+        self.title = title
+        self.sections = []
+class Section:
+    def __init__(self, title, user_message, intent_points):
+        self.title = title
+        self.user_message = user_message
+        self.intent_points = intent_points
+        self.subsection = []
+        self.assistant_block = []
+class Subsection:
+    def __init__(self, title, user_message, intent_points):
+        self.title = title
+        self.user_message = user_message
+        self.intent_points = intent_points
+        self.assistant_block = []
+class Message:
+    def __init__(self, role, content, id):
+        self.role = role
+        self.content = content
+        self.id = id
 
 
 def getConversationMessage(conversation):
