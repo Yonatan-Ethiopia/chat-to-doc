@@ -32,6 +32,56 @@ class Message:
         self.content = content
         self.id = id
 
+client = Groq(
+    api_key = ""
+)
+
+def ideaBoundary(current_message, previous_section, intent_points):
+    request = client.chat.completion.create(
+        model="openai/gpt-oss-120b",
+        messages = [
+            {
+                "role" : "system",
+                "content" :  (
+                "You are an indexing engine. "
+                "Return ONLY valid JSON. "
+                "No explanations. No markdown."
+            )
+            },
+            {
+                "role" : "user",
+                "content" : f"""
+Current section title: {previous_section}
+
+New user message: {current_message}
+
+Intent_points: {intent_points}
+
+Respond using exactly this JSON schema:
+{{
+  "decision": "NEW_TOPIC | CONTINUE_TOPIC",
+  "section_title": string | null,
+  "subsection_title": string | null,
+  "intent_points": [string]
+}}
+                """
+            }
+        ]
+    )
+    response = request.choices[0].message.content
+    try:
+        final_decision = json.loads(response)
+    except json.JSONDecodeError as e:
+        return { "decision": "NEW_TOPIC", "section_title": None, "subsection_title": None, "intent_points": []}
+    if final_decision["decision"] not in ("NEW_TOPIC", "CONTINUE_TOPIC"):
+        return { "decision": "NEW_TOPIC", "section_title": None, "subsection_title": None, "intent_points": []}
+
+    if not isinstance(final_decision["intent_points"], list):
+        return { "decision": "NEW_TOPIC", "section_title": None, "subsection_title": None, "intent_points": []}
+    return final_decision
+
+
+
 
 def getConversationMessage(conversation):
     message = []
