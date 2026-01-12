@@ -3,6 +3,8 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib.colors import HexColor
+from reportlab.lib.enums import TA_LEFT, TA_CENTER
+from reportlab.lib import colors
 from groq import Groq
 import io
 
@@ -239,6 +241,8 @@ def create_dom(fullChatHist):
 
 
 def build_pdf(doc):
+    Pdoc = SimpleDocTemplate("demo.pdf", pagesize=letter) 
+    convo = []
     styles = getSampleStyleSheet()
 
     styles.add(ParagraphStyle(
@@ -260,6 +264,32 @@ def build_pdf(doc):
         fontName = 'Helvetica-bold'
     ))
     styles.add(ParagraphStyle(
-        name = 'NormalText',
-        parents = 
+        name='SubsectionTitle',
+        parent=styles['Heading3'],
+        fontSize=14,
+        textColor=colors.darkgreen,
+        spaceAfter=10,
+        spaceBefore=15,
+        fontName='Helvetica-Bold'
     ))
+    styles.add(ParagraphStyle(
+        name='NormalText',
+        parent=styles['Normal'],
+        fontSize=12,
+        leading=14,  # Line spacing
+        spaceAfter=6,
+        firstLineIndent=20
+    ))
+    for i in doc.chapters:
+        convo.append(i.title, styles['ChapterTitle'])
+        for j in i.sections:
+            convo.append(j.title, styles['SectionTitle'])
+            convo.append(j.user_message, style['NormalText'])
+            convo.append(j.assistant_block[0], style['NormalText'])
+            if len(j.subsection) > 0:
+                for k in j.subsection:
+                    convo.append(k.title, styles['SubsectionTitle'])
+                    convo.append(k.user_message, styles['NormalText'])
+                    convo.append(k.assistant_block[0], styles['NormalText'])
+    Pdoc.build(convo)
+    
