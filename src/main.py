@@ -237,3 +237,29 @@ def create_dom(fullChatHist):
         doc.chapters.append(chapter)
     return doc
 
+
+def build_pdf(doc):
+    styles = getSampleStyleSheet()
+
+    styles.add(ParagraphStyle(
+        name = 'ChapterTitle',
+        parents = Styles['Heading1'],
+        fontSize = 24,
+        textColor = colors.darkblue,
+        spaceAfter=30,
+        alignment = TA_CENTER,
+        fontName = 'Helvetica-bold'
+    ))
+    styles.add(ParagraphStyle(
+        name = 'SectionTitle',
+        parents = Styles['Heading2'],
+        fontSize = 18,
+        textColor = colors.darkblue,
+        spaceAfter = 15,
+        spaceBefore = 20,
+        fontName = 'Helvetica-bold'
+    ))
+    styles.add(ParagraphStyle(
+        name = 'NormalText',
+        parents = 
+    ))
