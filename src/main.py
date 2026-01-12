@@ -202,3 +202,15 @@ def parse_and_create_pdf(chat_history, output_file="chat.pdf"):
     print(f"PDF created: {pdf_file}")
     return pdf_file
 
+def create_dom(fullChatHist):
+    doc = Document()
+    previous_section = ""
+    intent_points = []
+    for i in fullChatHist:
+        chapter = Chapter(title = i.title)
+        messages = getConversationMessage(i)
+        for j in messages:
+            if j["author"] == "user":
+                res
+
+
