@@ -211,6 +211,6 @@ def create_dom(fullChatHist):
         messages = getConversationMessage(i)
         for j in messages:
             if j["author"] == "user":
-                res
+                response = ideaBoundary()
 
 
