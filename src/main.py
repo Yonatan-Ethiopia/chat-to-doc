@@ -204,13 +204,36 @@ def parse_and_create_pdf(chat_history, output_file="chat.pdf"):
 
 def create_dom(fullChatHist):
     doc = Document()
-    previous_section = ""
-    intent_points = []
+    
     for i in fullChatHist:
         chapter = Chapter(title = i.title)
+        previous_section = ""
+        intent_points = []
         messages = getConversationMessage(i)
         for j in messages:
             if j["author"] == "user":
-                response = ideaBoundary()
-
+                response = ideaBoundary(j["parts"][0]["text"], previous_section, intent_points)
+                if response["decision"] == "NEW_TOPIC":
+                    current_section = Section(
+                        title = response["section_title"],
+                        user_message = j["parts"][0]["text"],
+                        intent_points = response["intent_points"]
+                    )
+                    previous_section = response["section_title"]
+                    intent_points = response["intent_points"]
+                    chapter.sections.append(current_section)
+                if response["decision"] == "CONTINUE_TOPIC":
+                    current_subsection = Section(
+                        title = response("subsection_title"),
+                        user_message = j["parts"][0]["text"],
+                        intent_points = response["intent_points"]
+                    )
+                    current_section.subsection.append(current_subsection)
+            if j["author"] == "chatgpt":
+                if response["decision"] == "NEW_TOPIC":
+                    current_section.assitant_block.append(j["parts"][0]["text"])
+                if response["decision"] == "CONTINUE_TOPIC":
+                    current_subsection.assistant_block.append(j["part"][0]["text"])
+        doc.chapters.append(chapter)
+    return doc
 
