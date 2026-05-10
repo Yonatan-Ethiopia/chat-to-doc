@@ -1,128 +1,70 @@
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.lib.colors import HexColor
-import io
+from flask import Flask, request, jsonify, send_from_directory, abort  
+from flask_cors import CORS
+ 
+import os
+import database
 
+app = Flask(__name__)
+CORS(app)
+app.config['UPLOAD_FOLDER'] = '/home/yonatan/Bdoc'
+app.config['MAX_CONTENT_LENGTH'] = 10*1024*1024
 
+db = database.initdb()
 
-def getConversationMessage(conversation):
-    message = []
-    currentNode = conversation["current_node"]
-    while currentNode != None:
-        node = conversation["mapping"][currentNode]
-        if (node and 
-            'message' in node and 
-            node['message'] and 
-            'content' in node['message'] and
-            node['message']['content'] and
-            'parts' in node['message']['content'] and
-            len(node['message']['content']['parts']) > 0):
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+    if file:
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], file.filename))
+        file_name = os.path.splitext(file.filename)[0]
+        job_id = db.create_job(file_name, "hi", f"{app.config['UPLOAD_FOLDER']}/{file.filename}")
+        return jsonify({"message": "File uploaded", "job_id": job_id}), 200
+
+@app.route('/getepub', methods=['POST'])
+def job_result():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No JSON data provided"}), 400
+        
+    job_id = data.get('job_id')
+    if not job_id:
+        return jsonify({"error": "No job_id provided"}), 400
+        
+    job_status = database.check_status(job_id)
+    
+    if job_status == "PENDING" or job_status == "PROCESSING":
+        print(f"Pending for {job_id} status is {job_status}")
+        return jsonify({"status": job_status, "message": f"Job is {job_status.lower()}"}), 202
+    elif job_status == "COMPLETED":
+        print(f"Job is complete {job_id}")
+        full_path = database.get_epub_path(job_id)
+        epub_name = database.get_epub_name(job_id)
+        
+        if not full_path or not os.path.exists(full_path):
+            print(f"Error no file found {full_path}")
+            return jsonify({"error": "EPUB file not found"}), 404
             
-            author = node['message']['author']['role']
-            if author == "assistant" or author == "tool":
-                author = "chatgpt"
-            if author == "system" and node['message']['metadata']['is_user_system_message']:
-                author = "custom user info"
-            
-            if node['message']['content']['content_type'] == "text" or node['message']['content']['content_type'] == "multimodal_text":
-                parts = node['message']['content']["parts"]
-                part = []
-                for i in parts:
-                    if type(i) and len(i)>0:
-                        part.append({"text":i})
-                if len(part) > 0:
-                    message.append({"author":author, "parts": part})
-        currentNode = node["parent"]
-    return reversed(message)
+        directory_path = os.path.dirname(full_path)
+        file_name = os.path.basename(full_path)
 
-def renderConversations(fullChatHist):
-
-    f = getConversationMessage(fullChatHist)
-    for j in f:
-        print(f"Author: ${j['author']} \n Message: ${j['parts'][0]['text']} \n")
-
-
-def create_chat_pdf(messages, output_filename="chat_export.pdf"):
-    """Create a PDF from parsed OpenAI chat messages"""
-    
-    # Create PDF document
-    doc = SimpleDocTemplate(
-        output_filename,
-        pagesize=letter,
-        rightMargin=72,
-        leftMargin=72,
-        topMargin=72,
-        bottomMargin=72
-    )
-    
-    # Define styles
-    styles = getSampleStyleSheet()
-    
-    # Custom styles
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Title'],
-        fontSize=16,
-        spaceAfter=30,
-        textColor=HexColor('#2c3e50')
-    )
-    
-    user_style = ParagraphStyle(
-        'UserMessage',
-        parent=styles['Normal'],
-        fontSize=11,
-        textColor=HexColor('#2c3e50'),
-        backColor=HexColor('#ecf0f1'),
-        borderPadding=10,
-        leftIndent=0,
-        spaceAfter=12
-    )
-    
-    assistant_style = ParagraphStyle(
-        'AssistantMessage',
-        parent=styles['Normal'],
-        fontSize=11,
-        textColor=HexColor('#2c3e50'),
-        backColor=HexColor('#e8f6f3'),
-        borderPadding=10,
-        leftIndent=0,
-        spaceAfter=12
-    )
-    
-    # Build story (content)
-    story = []
-    
-    # Add title
-    story.append(Paragraph("AI Conversation Export", title_style))
-    story.append(Spacer(1, 20))
-    
-    # Add each message
-    for msg in messages:
-        author = msg['author']
-        text = msg['parts'][0]['text'] if msg['parts'] else ""
+        print(f"Sending file: {full_path}")
+        print(f"Directory: {directory_path}")
+        print(f"Filename: {file_name}")
+        print(f"Download name: {epub_name}")
         
-        # Create formatted message
-        message_text = f"<b>{author}:</b><br/>{text}"
-        
-        if author == "User" or author == "user":
-            story.append(Paragraph(message_text, user_style))
-        else:  # ChatGPT/Assistant
-            story.append(Paragraph(message_text, assistant_style))
-        
-        # Add some space between messages, but not after last one
-    
-    # Build PDF
-    doc.build(story)
-    return output_filename
+        return send_from_directory(
+            directory_path, 
+            file_name, 
+            as_attachment=True, 
+            download_name=f"converted_{epub_name}.epub"
+        )
+    else:
+        print(f"No job found {job_id}")
+        return jsonify({"error": "Job not found"}), 404
 
-
-def parse_and_create_pdf(chat_history, output_file="chat.pdf"):
-    """Complete pipeline: parse chat → create PDF"""
-    messages = getConversationMessage(chat_history)
-    pdf_file = create_chat_pdf(messages, output_file)
-    pdf2_file = create_structured_pdf(messages)
-    print(f"PDF created: {pdf_file}")
-    return pdf_file
-
+if __name__=="__main__":
+    app.run(port=5000, debug=True) 
