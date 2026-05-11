@@ -32,4 +32,4 @@
 
 ---
 
-**This project is not finished.**  
+**Work in progress, contributions welcome**  
